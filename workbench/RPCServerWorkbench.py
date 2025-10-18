@@ -145,7 +145,15 @@ class FreeCADRPCMethods:
             doc = FreeCAD.getDocument(document_name)
             object = doc.addObject(object_type, object_name)
             for key, value in properties.items():
-                if hasattr(object, key):
+
+                # Placement has to be set to specific object types
+                if key == "Placement":
+                    self._set_placement(object, value)
+                
+                # ShapeColor is a child of ViewObject
+                elif key == "ViewObject":
+                    self._set_view(object, value)
+                elif hasattr(object, key):
                     setattr(object, key, value)
             doc.recompute()
             FreeCAD.Console.PrintMessage(f"Object '{object_name}' created.\n")
@@ -153,6 +161,37 @@ class FreeCADRPCMethods:
         except Exception as e:
             FreeCAD.Console.PrintError(f"Error creating object: {e}\n")
             return {'status': 'error', 'message': str(e)}
+    
+    def _set_placement(self, object, placement: dict):
+        try:
+            from FreeCAD import Placement, Vector, Rotation
+
+            base = placement.get('Base', {})
+            position = Vector(base.get('x', 0), base.get('y', 0), base.get('z', 0))
+
+            rotation = placement.get('Rotation', {})
+            if (rotation):
+                axis = rotation.get('Axis', {'x': 0, 'y': 0, 'z': 0})
+                angle = rotation.get('Angle', 0)
+                set_axis = Vector(axis['x'], axis['y'], axis['z'])
+                if (set_axis.length > 0):
+                    axis = axis.normalize()
+                rotation = Rotation(axis, angle)
+            else:
+                rotation = Rotation(0, 0, 0)
+            
+            object.Placement = Placement(position, rotation)
+            FreeCAD.Console.PrintMessage(f"Placement set for '{object.Name}'\n")
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Failed to set placement: {e}\n")
+    
+    def _set_view(self, object, view: dict):
+        try:
+            for key, value in view.items():
+                if hasattr(object.ViewObject, key):
+                    setattr(object.ViewObject, key, value)
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Failed to set view properties: {e}\n")
 
 rpc_server = RPCServer()
 
