@@ -191,7 +191,7 @@ def delete_object(document_name: str, object_name: str) -> str:
     return json.dumps(result)
 
 
-@mcp.tool
+@mcp.tool()
 def execute_code(code: str) -> str:
     """
     Executes code on the FreeCAD server
