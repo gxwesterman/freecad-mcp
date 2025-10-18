@@ -234,7 +234,11 @@ class FreeCADRPCMethods:
     def _set_view(self, object, view: dict):
         try:
             for key, value in view.items():
-                if hasattr(object.ViewObject, key):
+
+                # The value of ShapeColor has to be a tuple (L)
+                if key == "ShapeColor":
+                    setattr(object.ViewObject, key, (float(value[0]), float(value[1]), float(value[2]), float(value[3])))
+                else:
                     setattr(object.ViewObject, key, value)
         except Exception as e:
             FreeCAD.Console.PrintError(f"Failed to set view properties: {e}\n")
