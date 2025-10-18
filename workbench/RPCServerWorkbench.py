@@ -134,7 +134,7 @@ class FreeCADRPCMethods:
         except Exception as e:
             return {'status': 'error', 'message': str(e)}
     
-    def new_object(self, document_name: str, object_name: str, object_type: str, properties: dict | None= None) -> dict:
+    def new_object(self, document_name: str, object_name: str, object_type: str, properties: dict | None = None) -> dict:
         if properties is None:
             properties = {}
         self.rpc_server._queue(self._new_object, document_name, object_name, object_type, properties)
@@ -162,6 +162,23 @@ class FreeCADRPCMethods:
             FreeCAD.Console.PrintError(f"Error creating object: {e}\n")
             return {'status': 'error', 'message': str(e)}
     
+    def delete_object(self, document_name: str, object_name: str):
+        self.rpc_server._queue(lambda: self._delete_object(document_name, object_name))
+        return {'status': 'queued'}
+    
+    def _delete_object(self, document_name: str, object_name: str):
+        try:
+            doc = FreeCAD.getDocument(document_name)
+            object = doc.getObject(object_name)
+            if not object:
+                return {'status': 'error', 'message': 'Object not found.'}
+            doc.removeObject(object_name)
+            doc.recompute()
+            FreeCAD.Console.PrintMessage(f"Object '{object_name}' deleted.\n")
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Failed to delete '{object_name}'.\n")
+            return {'status': 'error', 'message': str(e)}
+
     def _set_placement(self, object, placement: dict):
         try:
             from FreeCAD import Placement, Vector, Rotation

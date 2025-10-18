@@ -104,6 +104,14 @@ def create_object(document_name: str, object_name: str, object_type: str, proper
     result = client.new_object(document_name, object_name, object_type, properties)
     return json.dumps(result)
 
+
+@mcp.tool()
+def delete_object(document_name: str, object_name: str):
+    """Delete an existing FreeCAD object"""
+    result = client.delete_object(document_name, object_name)
+    return json.dumps(result)
+
+
 def main():
     mcp.run()
 

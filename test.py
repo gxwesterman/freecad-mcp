@@ -30,14 +30,21 @@ class FreeCADClientServerProxy:
         print(f"create('{document_name}', '{object_name}', '{object_type}', {properties}): {result}")
         return result
 
+    def delete_object(self, document_name: str, object_name: str):
+        result = self.server.delete_object(document_name, object_name)
+        print(f"delete('{document_name}', '{object_name}'")
+        return result
+
 def main():
     try:
         client = FreeCADClientServerProxy()
-        client.new_object("Unnamed", "MyBox", "Part::Box", {
-            "Length": 20,
-            "Width": 15,
-            "Height": 10
-        })
+        # client.new_object("Unnamed", "MyBox", "Part::Box", {
+        #     "Length": 20,
+        #     "Width": 15,
+        #     "Height": 10
+        # })
+        
+        client.delete_object("Unnamed", "MyBox")
 
         # client.new_object("Unnamed", "PositionedBox", "Part::Box", {
         #     "Length": 20,
