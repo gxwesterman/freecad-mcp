@@ -153,8 +153,26 @@ class FreeCADRPCMethods:
                 # ShapeColor is a child of ViewObject
                 elif key == "ViewObject":
                     self._set_view(object, value)
+
+                # Stuff like fillets are new objects that link to existing objects
+                elif key == "Base":
+                    base_object = doc.getObject(value)
+                    if (base_object):
+                        setattr(object, key, base_object)
+                        base_object.ViewObject.Visibility = False
+                    else:
+                        FreeCAD.Console.PrintMessage(f"Base object not found.\n")
+                        return {'status': 'error', 'message': 'Base object not found.'}
+
+                # Edges are tuples
+                elif key == "Edges" and isinstance(value, list):
+                    edge_tuples = [tuple(edge) if isinstance(edge, list) else edge for edge in value]
+                    setattr(object, key, edge_tuples)
+
+                # Catch-all
                 elif hasattr(object, key):
                     setattr(object, key, value)
+
             doc.recompute()
             FreeCAD.Console.PrintMessage(f"Object '{object_name}' created.\n")
             return {'status': 'success', 'object': object.Name}
@@ -182,8 +200,20 @@ class FreeCADRPCMethods:
                 # ShapeColor is a child of ViewObject
                 elif key == "ViewObject":
                     self._set_view(object, value)
+                
+                # Stuff like fillets are new objects that link to existing objects
+                elif key == "Base":
+                    base_object = doc.getObject(value)
+                    if (base_object):
+                        setattr(object, key, base_object)
+                    else:
+                        FreeCAD.Console.PrintMessage(f"Base object not found.\n")
+                        return {'status': 'error', 'message': 'Base object not found.'}
+                    
+                # Catch-all
                 elif hasattr(object, key):
                     setattr(object, key, value)
+
             doc.recompute()
             FreeCAD.Console.PrintMessage(f"Object '{object_name}' updated.\n")
             return {'status': 'success', 'object': object.Name}
@@ -242,6 +272,31 @@ class FreeCADRPCMethods:
                     setattr(object.ViewObject, key, value)
         except Exception as e:
             FreeCAD.Console.PrintError(f"Failed to set view properties: {e}\n")
+
+    def execute_code(self, code: str) -> dict:
+        self.rpc_server._queue(self._execute_code, code)
+        return {'status': 'queued'}
+    
+    def _execute_code(self, code: str) -> dict:
+        try:
+            namespace = {
+                'FreeCAD': FreeCAD,
+                'App': FreeCAD,
+                'doc': None
+            }
+            
+            try:
+                namespace['doc'] = FreeCAD.activeDocument()
+            except:
+                pass
+            
+            exec(code, namespace)
+            
+            FreeCAD.Console.PrintMessage(f"Code executed successfully.\n")
+            return {'status': 'success', 'message': 'Code executed'}
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Error executing code: {e}\n")
+            return {'status': 'error', 'message': str(e)}
 
 rpc_server = RPCServer()
 
