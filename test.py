@@ -1,0 +1,58 @@
+"""
+TESTING SCRIPT BEFORE DIVING INTO USING THE MCP
+"""
+
+import xmlrpc.client
+
+class FreeCADClientServerProxy:
+    def __init__(self, host: str = "127.0.0.1", port: int = 8765):
+        self.server = xmlrpc.client.ServerProxy(f"http://{host}:{port}")
+
+    def new_document(self, name: str):
+        result = self.server.new_document(name)
+        print(f"new_document('{name}'): {result}")
+        return result
+    
+    def get_document(self, name: str):
+        result = self.server.get_document(name)
+        print(f"get_document('{name}'): {result}")
+        return result
+
+    def list_documents(self):
+        result = self.server.list_documents()
+        print(f"list_documents(): {result}")
+        return result
+    
+    def new_object(self, document_name: str, object_name: str, object_type: str, properties: dict = None):
+        if properties is None:
+            properties = {}
+        result = self.server.new_object(document_name, object_name, object_type, properties)
+        print(f"create('{document_name}', '{object_name}', '{object_type}', {properties}): {result}")
+        return result
+
+def main():
+    try:
+        client = FreeCADClientServerProxy()
+        client.new_object("Unnamed", "MyBox", "Part::Box", {
+            "Length": 20,
+            "Width": 15,
+            "Height": 10
+        })
+
+        # client.new_object("Unnamed", "PositionedBox", "Part::Box", {
+        #     "Length": 20,
+        #     "Width": 15,
+        #     "Height": 10,
+        #     "Placement": {
+        #         "Base": {"x": 10, "y": 20, "z": 5},
+        #         "Rotation": {"Axis": {"x": 0, "y": 0, "z": 1}, "Angle": 45}
+        #     }
+        # })
+        
+    except ConnectionRefusedError:
+        print("Error: Could not connect to FreeCAD RPC Server")
+    except Exception as e:
+        print(f"Error: {e}")
+
+if __name__ == "__main__":
+    main()

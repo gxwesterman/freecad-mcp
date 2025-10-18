@@ -1,0 +1,12 @@
+[project]
+name = "freecad-mcp-test"
+version = "0.1.0"
+description = "Add your description here"
+readme = "README.md"
+requires-python = ">=3.13"
+dependencies = [
+    "httpx>=0.28.1",
+    "mcp[cli]>=1.18.0",
+    "pyside6>=6.10.0",
+    "requests>=2.32.5",
+]
