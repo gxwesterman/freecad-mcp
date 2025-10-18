@@ -29,10 +29,15 @@ class FreeCADClientServerProxy:
         result = self.server.new_object(document_name, object_name, object_type, properties)
         print(f"create('{document_name}', '{object_name}', '{object_type}', {properties}): {result}")
         return result
+    
+    def update_object(self, document_name: str, object_name: str, properties: dict = None):
+        result = self.server.update_object(document_name, object_name, properties)
+        print(f"update('{document_name}', '{object_name}', {properties}): {result}")
+        return result
 
     def delete_object(self, document_name: str, object_name: str):
         result = self.server.delete_object(document_name, object_name)
-        print(f"delete('{document_name}', '{object_name}'")
+        print(f"delete('{document_name}', '{object_name}'): {result}")
         return result
 
 def main():
@@ -43,8 +48,18 @@ def main():
         #     "Width": 15,
         #     "Height": 10
         # })
+
+        client.update_object("Unnamed", "MyBox", {
+            "Length": 100,
+            "Width": 50,
+            "Height": 12,
+            "Placement": {
+                "Base": {"x": 10, "y": 20, "z": 5},
+                "Rotation": {"Axis": {"x": 0, "y": 0, "z": 1}, "Angle": 45}
+            }
+        })
         
-        client.delete_object("Unnamed", "MyBox")
+        # client.delete_object("Unnamed", "MyBox")
 
         # client.new_object("Unnamed", "PositionedBox", "Part::Box", {
         #     "Length": 20,

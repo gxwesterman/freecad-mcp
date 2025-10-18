@@ -25,9 +25,15 @@ class FreeCADClientServerProxy:
         return result
     
     def new_object(self, document_name: str, object_name: str, object_type: str, properties: dict | None = None):
-        if properties is None:
-            properties = {}
         result = self.server.new_object(document_name, object_name, object_type, properties)
+        return result
+    
+    def update_object(self, document_name: str, object_name: str, properties: dict | None = None):
+        result = self.server.update_object(document_name, object_name, properties)
+        return result
+    
+    def delete_object(self, document_name: str, object_name: str):
+        result = self.server.delete_object(document_name, object_name)
         return result
     
 client = FreeCADClientServerProxy()
@@ -99,14 +105,19 @@ def create_object(document_name: str, object_name: str, object_type: str, proper
         }
 
     """
-    if properties is None:
-        properties = {}
     result = client.new_object(document_name, object_name, object_type, properties)
     return json.dumps(result)
 
 
 @mcp.tool()
-def delete_object(document_name: str, object_name: str):
+def update_object(document_name: str, object_name: str, properties: dict | None = None) -> str:
+    """Update the properties of an existing FreeCAD object"""
+    result = client.update_object(document_name, object_name, properties)
+    return json.dumps(result)
+
+
+@mcp.tool()
+def delete_object(document_name: str, object_name: str) -> str:
     """Delete an existing FreeCAD object"""
     result = client.delete_object(document_name, object_name)
     return json.dumps(result)

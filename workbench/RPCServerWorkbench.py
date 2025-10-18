@@ -161,12 +161,41 @@ class FreeCADRPCMethods:
         except Exception as e:
             FreeCAD.Console.PrintError(f"Error creating object: {e}\n")
             return {'status': 'error', 'message': str(e)}
+        
+    def update_object(self, document_name: str, object_name: str, properties: dict | None = None) -> dict:
+        self.rpc_server._queue(lambda: self._update_object(document_name, object_name, properties))
+        return {'status': 'queued'}
+
+    def _update_object(self, document_name: str, object_name: str, properties: dict | None = None) -> dict:
+        try:
+            doc = FreeCAD.getDocument(document_name)
+            object = doc.getObject(object_name)
+            if not object:
+                return {'status': 'error', 'message': 'Object not found.'}
+
+            for key, value in properties.items():
+
+                # Placement has to be set to specific object types
+                if key == "Placement":
+                    self._set_placement(object, value)
+                
+                # ShapeColor is a child of ViewObject
+                elif key == "ViewObject":
+                    self._set_view(object, value)
+                elif hasattr(object, key):
+                    setattr(object, key, value)
+            doc.recompute()
+            FreeCAD.Console.PrintMessage(f"Object '{object_name}' updated.\n")
+            return {'status': 'success', 'object': object.Name}
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Error creating object: {e}\n")
+            return {'status': 'error', 'message': str(e)}
     
-    def delete_object(self, document_name: str, object_name: str):
+    def delete_object(self, document_name: str, object_name: str) -> dict:
         self.rpc_server._queue(lambda: self._delete_object(document_name, object_name))
         return {'status': 'queued'}
     
-    def _delete_object(self, document_name: str, object_name: str):
+    def _delete_object(self, document_name: str, object_name: str) -> dict:
         try:
             doc = FreeCAD.getDocument(document_name)
             object = doc.getObject(object_name)
@@ -190,9 +219,9 @@ class FreeCADRPCMethods:
             if (rotation):
                 axis = rotation.get('Axis', {'x': 0, 'y': 0, 'z': 0})
                 angle = rotation.get('Angle', 0)
-                set_axis = Vector(axis['x'], axis['y'], axis['z'])
-                if (set_axis.length > 0):
-                    axis = axis.normalize()
+                axis_vector = Vector(axis['x'], axis['y'], axis['z'])
+                if (axis_vector.Length > 0):
+                    axis = axis_vector.normalize()
                 rotation = Rotation(axis, angle)
             else:
                 rotation = Rotation(0, 0, 0)
