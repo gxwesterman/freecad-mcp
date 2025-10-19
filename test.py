@@ -40,6 +40,11 @@ class FreeCADClientServerProxy:
         print(f"delete('{document_name}', '{object_name}'): {result}")
         return result
     
+    def update_edges(self, document_name: str, base_object_name: str, edge_type: str, edges):
+        result = self.server.update_edges(document_name, base_object_name, edge_type, edges)
+        print(f"update('{document_name}', '{base_object_name}', {edge_type}): {result}")
+        return result
+  
     def execute_code(self, code: str):
         result = self.server.execute_code(code)
         print(f"Result: {result}")
@@ -54,16 +59,12 @@ def main():
         #     "Height": 10
         # })
 
-        client.execute_code("""
-doc = FreeCAD.newDocument('ExecuteCodeTest')
-print(f"Document created: {doc.Name}")
-""")
+#         client.execute_code("""
+# doc = FreeCAD.newDocument('ExecuteCodeTest')
+# print(f"Document created: {doc.Name}")
+# """)
 
-        # client.new_object("Unnamed", "MyFilet", "Part::Fillet", {
-        #   "Base": "MyBox",
-        #   "Radius": 1,
-        #   "Edges": [(1, 1.0, 1.0), (2, 1.0, 1.0), (3, 1.0, 1.0), (4, 1.0, 1.0), (5, 1.0, 1.0), (6, 1.0, 1.0), (7, 1.0, 1.0), (8, 1.0, 1.0), (9, 1.0, 1.0), (10, 1.0, 1.0), (11, 1.0, 1.0), (12, 1.0, 1.0)]
-        # })
+        client.update_edges("Unnamed", "MyBox", "Part::Fillet", [(1, 1.0, 1.0), (2, 1.0, 1.0), (3, 1.0, 1.0), (4, 1.0, 1.0), (5, 1.0, 1.0), (6, 1.0, 1.0), (7, 1.0, 1.0), (8, 1.0, 1.0), (9, 1.0, 1.0), (10, 1.0, 1.0), (11, 1.0, 1.0), (12, 1.0, 1.0)])
 
         # client.update_object("Unnamed", "MyBox", {
         #     "Length": 100,

@@ -154,20 +154,14 @@ class FreeCADRPCMethods:
                 elif key == "ViewObject":
                     self._set_view(object, value)
 
-                # Stuff like fillets are new objects that link to existing objects
+                # Certain objects link to existing objects
                 elif key == "Base":
                     base_object = doc.getObject(value)
                     if (base_object):
                         setattr(object, key, base_object)
-                        base_object.ViewObject.Visibility = False
                     else:
                         FreeCAD.Console.PrintMessage(f"Base object not found.\n")
                         return {'status': 'error', 'message': 'Base object not found.'}
-
-                # Edges are tuples
-                elif key == "Edges" and isinstance(value, list):
-                    edge_tuples = [tuple(edge) if isinstance(edge, list) else edge for edge in value]
-                    setattr(object, key, edge_tuples)
 
                 # Catch-all
                 elif hasattr(object, key):
@@ -272,6 +266,39 @@ class FreeCADRPCMethods:
                     setattr(object.ViewObject, key, value)
         except Exception as e:
             FreeCAD.Console.PrintError(f"Failed to set view properties: {e}\n")
+
+    def update_edges(self, document_name: str, base_object_name: str, edge_type: str, edges: list) -> dict:
+        self.rpc_server._queue(self._update_edges, document_name, base_object_name, edge_type, edges)
+        return {'status': 'queued'}
+
+    def _update_edges(self, document_name: str, base_object_name: str, edge_type: str, edges: list) -> dict:
+        try:
+            doc = FreeCAD.getDocument(document_name)
+            base_object = doc.getObject(base_object_name)
+            
+            if not base_object:
+                return {'status': 'error', 'message': f'Base object "{base_object_name}" not found'}
+            
+            if edge_type not in ['Part::Fillet', 'Part::Chamfer']:
+                return {'status': 'error', 'message': f'Invalid edge_type. Must be "Part::Fillet" or "Part::Chamfer"'}
+            
+            object_name = f"{base_object_name}{edge_type.split('::')[1]}"
+            
+            edge_obj = doc.addObject(edge_type, f"{base_object_name}-{object_name}")
+            edge_obj.Base = base_object
+            base_object.ViewObject.Visibility = False
+            
+            # Convert lists to tuples for Edges property
+            edge_tuples = [tuple(edge) if isinstance(edge, list) else edge for edge in edges]
+            edge_obj.Edges = edge_tuples
+            
+            doc.recompute()
+            FreeCAD.Console.PrintMessage(f"Edge object '{object_name}' created with {len(edge_tuples)} edges.\n")
+            return {'status': 'success', 'object': edge_obj.Name}
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Error creating edge object: {e}\n")
+            return {'status': 'error', 'message': str(e)}
+
 
     def execute_code(self, code: str) -> dict:
         self.rpc_server._queue(self._execute_code, code)

@@ -36,6 +36,10 @@ class FreeCADClientServerProxy:
         result = self.server.delete_object(document_name, object_name)
         return result
     
+    def update_edges(self, document_name: str, base_object_name: str, edge_type: str, edges):
+        result = self.server.update_edges(document_name, base_object_name, edge_type, edges)
+        return result
+    
     def execute_code(self, code: str):
         result = self.server.execute_code(code)
         return result
@@ -53,7 +57,9 @@ def freecad_instructions() -> str:
         - Cube, Cylinder, Sphere, Cone, Torus, Tube
     2. To create basic objects, use new_object
     3. To change existing basic objects, use update_object
-    4. For everything else, create a script and use execute_code
+    4. To apply fillets or chamfers, use update_edges
+    5. To delete basic objects or edges (e.g. fillets or chamfers), use delete_object
+    6. For everything else, create a script and use execute_code
     """
 
 @mcp.tool()
@@ -190,6 +196,32 @@ def delete_object(document_name: str, object_name: str) -> str:
     result = client.delete_object(document_name, object_name)
     return json.dumps(result)
 
+
+# Claude has no idea what is required for Edges
+@mcp.tool()
+def update_edges(document_name, base_object_name, edge_type, edges) -> str:
+    """
+    Updates the edges on a FreeCAD object
+
+    Arguments:
+      document_name: the name of the document upon which to create the new edge object
+      base_object_name: the base object that the edge object references
+      edge_type: the FreeCAD object type of edge to add (either Part::Fillet or Part::Chamfer)
+      edges: an array of edges e.g. [[1, 1.0, 1.0], [2, 1.0, 1.0], ...]
+
+    Returns:
+      JSON string with status and object name
+    
+    Examples:
+      To add a fillet to every edge on a cube, you can use the following data:
+
+      document_name: 'MyDocument',
+      base_object_name: 'MyCube',
+      edge_type: 'Part::Fillet'
+      edges: [[1, 1.0, 1.0], [2, 1.0, 1.0], [3, 1.0, 1.0], [4, 1.0, 1.0], [5, 1.0, 1.0], [6, 1.0, 1.0], [7, 1.0, 1.0], [8, 1.0, 1.0], [9, 1.0, 1.0], [10, 1.0, 1.0], [11, 1.0, 1.0], [12, 1.0, 1.0]]
+    """
+    result = client.update_edges(document_name, base_object_name, edge_type, edges)
+    return json.dumps(result)
 
 @mcp.tool()
 def execute_code(code: str) -> str:
