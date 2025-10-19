@@ -6,6 +6,7 @@ a. FreeCAD Setup
       - Linux: `~/.FreeCAD/Mod/` or `~/.local/share/FreeCAD/Mod/`
   3. Restart FreeCAD
   4. Select the MCP RCP Server workbench and start the server
+  
       <img width="752" height="253" alt="image" src="https://github.com/user-attachments/assets/72c1db90-3f18-4cb5-babb-ad052836d301" />
 
 b. Claude Setup
@@ -31,3 +32,4 @@ b. Claude Setup
    - MacOS\Linux: `code ~/Library/Application\ Support/Claude/claude_desktop_config.json`
 2. Restart Claude Desktop
 3. Ask Claude to make stuff in FreeCAD - it'll do its best
+
