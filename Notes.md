@@ -1,0 +1,26 @@
+## DESIGN DECISIONS AND TRADEOFFS
+- I decided to interface with FreeCAD via an RPC server bridge. I'm not sure if there were alternatives but it certainly increased the workload. Every tool required at least one corresponding RPC server function.
+- Not necessarily a design decision, but I went entirely with Python. The RPC server had to be written in Python so I decided making it all in the same language for consistency. The biggest tradeoff here was that it's been many years since I've written anything in Python. I quickly relearned that I don't like it. I did my best to enforce some types but alas.
+- Other examples I found implemented fewer tools and primarily leveraged the post and put object tools (with lengthy request parameter parsing) and arbritrary code execution to accomplish more complicated asset creation. This requires an extensive knowledge of the many different object types and their shapes, a decent amount of hubris, and ultimately less control in the hands of the user. I opted instead to focus on specific functionality I wanted to implement (such as filleting and extruding) and gave those their own tools. This meant I only had to know the shape of the Fillet, Chamfer, and Sketch objects (for example) and it let me give the LLM better instructions. For example, without describing how to create a fillet, Claude never gave any edges and the object always failed to get created. The obvious drawback with this approach is that the ratio of FreeCAD functionality to MCP tools is much higher (i.e. more tools per feature) rather than centrally handling the vast range of FreeCAD objects. Honestly, both approaches have their places - I think mine matches FreeCAD a bit better because many of their features somewhat convoluted and do not follow a consistent structure.
+- I decided to keep both of my servers (the RPC and the MCP) server in their own classes with matching functions. Perhaps more verbose but I prefer the clean structure.
+- I initially used a basic http server but found manually parsing json frustrating and switched to XML-RPC. There are certainly more secure ways to implement this and perhaps it wouldn't work best for STDIO communication but I think it fit for this use case.
+- There is a queue in the RPC server. Initially, there wasn't a queue. I started with the most basic list_documents test and everything worked so I moved on. Once I had new_document, I ran it and FreeCAD instantly crashed. Turns out FreeCAD does that. It's primarily single-threaded so GUI changes are blocking. I'm sure there are many ways around this but a queue paired with PySide works fine. Did mean I had to basically every function definition twice which was not fun. I would probably clean that up.
+- With simple Python servers, I do not think there is much more to say in the way of design decisions.
+
+## WHAT I WOULD DO WITH MORE TIME
+- The most obvious answer is implement more features. I implemented a small subset of the total capabilities of FreeCAD. I would probably keep with my more granular tool-to-feature approach and just go through the features of FreeCAD and make tools as I learn.
+- As a prerequisite to implementing more features, I would like to actually know how to use FreeCAD more. Perhaps the most significant blocker throughout the development process was my lack of knowledge of FreeCAD. I had to learn the object definitions, how to run Python commands on the CLI to get shape definitions, how to even do stuff like extrude and fillet. Turns out CAD software is not something you can easily learn in the span of a few hours.
+- Flesh out the existing tools. The new_object and update_object tools in particular are certainly missing some edge cases.
+- The two biggest gaps in the functionality independent of FreeCAD are:
+    1. No response from the RPC functions back to the tools. Could make a response thread or something and then display progress back to the Claude client and the user.
+    2. No means of getting an internal representation of the FreeCAD document. Simple get_object and get_objects tools would be extremely helpful for the LLM to understand instructions such as "Put a cylinder to the left of the cube" and to check if intended changes were actually applied.
+- I think the two features above would probably be the first things to add.
+ 
+## KNOWN LIMITATIONS \ ISSUES
+- This is basically answered by the section prior.
+- To be brief, this MCP lacks most of the functionality of FreeCAD (depending on how good Claude is at creating arbritrary Python scripts to run).
+- It also lacks internal representation of objects and responses from FreeCAD back to Claude.
+- It is also not wholly consistent but LLMs never really are.
+- I only tested on Windows because that's all I had so there may be gaps there.
+- It only works with Claude Desktop! Ideally MCPs work with many different MCP clients.
+- It also only works locally (and on port 8765).
