@@ -298,7 +298,128 @@ class FreeCADRPCMethods:
         except Exception as e:
             FreeCAD.Console.PrintError(f"Error creating edge object: {e}\n")
             return {'status': 'error', 'message': str(e)}
+        
+    def create_sketch(self, document_name: str, sketch_name: str, plane: str = "XY") -> dict:
+        """Create a new sketch on a specified plane"""
+        self.rpc_server._queue(self._create_sketch, document_name, sketch_name, plane)
+        return {'status': 'queued'}
 
+    def _create_sketch(self, document_name: str, sketch_name: str, plane: str) -> dict:
+        try:
+            doc = FreeCAD.getDocument(document_name)
+            
+            valid_planes = ["XY", "XZ", "YZ"]
+            if plane not in valid_planes:
+                return {'status': 'error', 'message': f'Invalid plane. Must be one of: {valid_planes}'}
+            
+            # Create sketch
+            sketch = doc.addObject('Sketcher::SketchObject', sketch_name)
+            
+            # Map plane names to normal vectors
+            plane_map = {
+                "XY": (0, 0, 1),
+                "XZ": (0, 1, 0),
+                "YZ": (1, 0, 0)
+            }
+            
+            sketch.MapMode = 'Deactivated'
+            
+            FreeCAD.Console.PrintMessage(f"Sketch '{sketch_name}' created on {plane} plane\n")
+            return {'status': 'success', 'object': sketch.Name}
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Error creating sketch: {e}\n")
+            return {'status': 'error', 'message': str(e)}
+
+    def add_sketch_circle(self, document_name: str, sketch_name: str, center_x: float, center_y: float, radius: float) -> dict:
+        """Add a circle to a sketch"""
+        self.rpc_server._queue(self._add_sketch_circle, document_name, sketch_name, center_x, center_y, radius)
+        return {'status': 'queued'}
+
+    def _add_sketch_circle(self, document_name: str, sketch_name: str, center_x: float, center_y: float, radius: float) -> dict:
+        try:
+            doc = FreeCAD.getDocument(document_name)
+            sketch = doc.getObject(sketch_name)
+            
+            if not sketch or sketch.TypeId != 'Sketcher::SketchObject':
+                return {'status': 'error', 'message': f'Sketch "{sketch_name}" not found'}
+            
+            doc.recompute()
+            
+            from FreeCAD import Vector
+            from Part import Circle
+            center = Vector(center_x, center_y, 0)
+            sketch.addGeometry(Circle(center, Vector(0, 0, 1), radius))
+            
+            doc.recompute()
+            FreeCAD.Console.PrintMessage(f"Circle added to sketch at ({center_x}, {center_y}) with radius {radius}\n")
+            return {'status': 'success', 'message': 'Circle added'}
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Error adding circle to sketch: {e}\n")
+            return {'status': 'error', 'message': str(e)}
+
+    def add_sketch_rectangle(self, document_name: str, sketch_name: str, x1: float, y1: float, x2: float, y2: float) -> dict:
+        """Add a rectangle to a sketch (defined by two opposite corners)"""
+        self.rpc_server._queue(self._add_sketch_rectangle, document_name, sketch_name, x1, y1, x2, y2)
+        return {'status': 'queued'}
+
+    def _add_sketch_rectangle(self, document_name: str, sketch_name: str, x1: float, y1: float, x2: float, y2: float) -> dict:
+        try:
+            doc = FreeCAD.getDocument(document_name)
+            sketch = doc.getObject(sketch_name)
+            
+            if not sketch or sketch.TypeId != 'Sketcher::SketchObject':
+                return {'status': 'error', 'message': f'Sketch "{sketch_name}" not found'}
+            
+            from FreeCAD import Vector
+            from Part import LineSegment
+            
+            p1 = Vector(x1, y1, 0)
+            p2 = Vector(x2, y1, 0)
+            p3 = Vector(x2, y2, 0)
+            p4 = Vector(x1, y2, 0)
+            
+            sketch.addGeometry(LineSegment(p1, p2))
+            sketch.addGeometry(LineSegment(p2, p3))
+            sketch.addGeometry(LineSegment(p3, p4))
+            sketch.addGeometry(LineSegment(p4, p1))
+            
+            doc.recompute()
+            FreeCAD.Console.PrintMessage(f"Rectangle added to sketch from ({x1}, {y1}) to ({x2}, {y2})\n")
+            return {'status': 'success', 'message': 'Rectangle added'}
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Error adding rectangle to sketch: {e}\n")
+            return {'status': 'error', 'message': str(e)}
+
+    def extrude(self, document_name: str, pad_name: str, sketch_name: str, length: float, symmetric: bool = False) -> dict:
+        """Create a Pad (extrusion) from a sketch"""
+        self.rpc_server._queue(self._extrude, document_name, pad_name, sketch_name, length, symmetric)
+        return {'status': 'queued'}
+
+    def _extrude(self, document_name: str, pad_name: str, sketch_name: str, length: float, symmetric: bool) -> dict:
+        try:
+            doc = FreeCAD.getDocument(document_name)
+            sketch = doc.getObject(sketch_name)
+            
+            if not sketch:
+                return {'status': 'error', 'message': f'Sketch "{sketch_name}" not found'}
+            
+            if sketch.TypeId != 'Sketcher::SketchObject':
+                return {'status': 'error', 'message': f'"{sketch_name}" is not a sketch'}
+            
+            pad = doc.addObject('PartDesign::Pad', pad_name)
+            pad.Profile = sketch
+            pad.Length = length
+            pad.Midplane = symmetric
+            pad.Reversed = False
+            
+            sketch.ViewObject.Visibility = False
+            
+            doc.recompute()
+            FreeCAD.Console.PrintMessage(f"Pad '{pad_name}' created from sketch '{sketch_name}' with length {length}\n")
+            return {'status': 'success', 'object': pad.Name}
+        except Exception as e:
+            FreeCAD.Console.PrintError(f"Error creating extrusion: {e}\n")
+            return {'status': 'error', 'message': str(e)}
 
     def execute_code(self, code: str) -> dict:
         self.rpc_server._queue(self._execute_code, code)

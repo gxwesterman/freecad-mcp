@@ -13,36 +13,42 @@ class FreeCADClientServerProxy:
         self.server = xmlrpc.client.ServerProxy(f"http://{host}:{port}")
 
     def new_document(self, name: str):
-        result = self.server.new_document(name)
-        return result
+        return self.server.new_document(name)
     
     def get_document(self, name: str):
-        result = self.server.get_document(name)
-        return result
+        return self.server.get_document(name)
 
     def list_documents(self):
-        result = self.server.list_documents()
-        return result
+        return self.server.list_documents()
     
-    def new_object(self, document_name: str, object_name: str, object_type: str, properties: dict | None = None):
-        result = self.server.new_object(document_name, object_name, object_type, properties)
-        return result
+    def new_object(self, document_name: str, object_name: str, object_type: str, properties: dict = None):
+        if properties is None:
+            properties = {}
+        return self.server.new_object(document_name, object_name, object_type, properties)
     
-    def update_object(self, document_name: str, object_name: str, properties: dict | None = None):
-        result = self.server.update_object(document_name, object_name, properties)
-        return result
-    
+    def update_object(self, document_name: str, object_name: str, properties: dict = None):
+        return self.server.update_object(document_name, object_name, properties)
+
     def delete_object(self, document_name: str, object_name: str):
-        result = self.server.delete_object(document_name, object_name)
-        return result
+        return self.server.delete_object(document_name, object_name)
     
     def update_edges(self, document_name: str, base_object_name: str, edge_type: str, edges):
-        result = self.server.update_edges(document_name, base_object_name, edge_type, edges)
-        return result
+        return self.server.update_edges(document_name, base_object_name, edge_type, edges)
+    
+    def create_sketch(self, document_name: str, sketch_name: str, plane: str = "XY"):
+        return self.server.create_sketch(document_name, sketch_name, plane)
+
+    def add_sketch_circle(self, document_name: str, sketch_name: str, center_x: float, center_y: float, radius: float):
+        return self.server.add_sketch_circle(document_name, sketch_name, center_x, center_y, radius)
+
+    def add_sketch_rectangle(self, document_name: str, sketch_name: str, x1: float, y1: float, x2: float, y2: float):
+        return self.server.add_sketch_rectangle(document_name, sketch_name, x1, y1, x2, y2)
+
+    def extrude(self, document_name: str, pad_name: str, sketch_name: str, length: float, symmetric: bool = False):
+        return self.server.extrude(document_name, pad_name, sketch_name, length, symmetric)
     
     def execute_code(self, code: str):
-        result = self.server.execute_code(code)
-        return result
+        return self.server.execute_code(code)
     
 client = FreeCADClientServerProxy()
 
@@ -58,8 +64,9 @@ def freecad_instructions() -> str:
     2. To create basic objects, use new_object
     3. To change existing basic objects, use update_object
     4. To apply fillets or chamfers, use update_edges
-    5. To delete basic objects or edges (e.g. fillets or chamfers), use delete_object
-    6. For everything else, create a script and use execute_code
+    5. TO extrude, use create_sketch, then add_sketch_*, then extrude
+    6. To delete basic objects or edges (e.g. fillets or chamfers), use delete_object
+    7. For everything else, create a script and use execute_code
     """
 
 @mcp.tool()
@@ -68,20 +75,17 @@ def create_document(name: str = "Unnamed") -> str:
     result = client.new_document(name)
     return json.dumps(result)
 
-
 @mcp.tool()
 def get_document(name: str) -> str:
     """Get a document by name"""
     result = client.get_document(name)
     return json.dumps(result)
 
-
 @mcp.tool()
 def list_documents() -> str:
     """List all open FreeCAD documents"""
     result = client.list_documents()
     return json.dumps(result)
-
 
 @mcp.tool()
 def create_object(document_name: str, object_name: str, object_type: str, properties: dict | None = None ) -> str:
@@ -132,7 +136,6 @@ def create_object(document_name: str, object_name: str, object_type: str, proper
     result = client.new_object(document_name, object_name, object_type, properties)
     return json.dumps(result)
 
-
 @mcp.tool()
 def update_object(document_name: str, object_name: str, properties: dict | None = None) -> str:
     """
@@ -180,7 +183,6 @@ def update_object(document_name: str, object_name: str, properties: dict | None 
     result = client.update_object(document_name, object_name, properties)
     return json.dumps(result)
 
-
 @mcp.tool()
 def delete_object(document_name: str, object_name: str) -> str:
     """
@@ -195,7 +197,6 @@ def delete_object(document_name: str, object_name: str) -> str:
     """
     result = client.delete_object(document_name, object_name)
     return json.dumps(result)
-
 
 # Claude has no idea what is required for Edges
 @mcp.tool()
@@ -221,6 +222,49 @@ def update_edges(document_name, base_object_name, edge_type, edges) -> str:
       edges: [[1, 1.0, 1.0], [2, 1.0, 1.0], [3, 1.0, 1.0], [4, 1.0, 1.0], [5, 1.0, 1.0], [6, 1.0, 1.0], [7, 1.0, 1.0], [8, 1.0, 1.0], [9, 1.0, 1.0], [10, 1.0, 1.0], [11, 1.0, 1.0], [12, 1.0, 1.0]]
     """
     result = client.update_edges(document_name, base_object_name, edge_type, edges)
+    return json.dumps(result)
+
+@mcp.tool()
+def create_sketch(document_name: str, sketch_name: str, plane: str = "XY") -> str:
+    '''Create a new sketch on a plane (XY, XZ, or YZ)'''
+    result = client.create_sketch(document_name, sketch_name, plane)
+    return json.dumps(result)
+
+@mcp.tool()
+def add_sketch_circle(document_name: str, sketch_name: str, center_x: float, center_y: float, radius: float) -> str:
+    '''
+    Add a circle to a sketch
+    
+    Example:
+      document_name: 'MyDocument'
+      sketch_name: 'Sketch'
+      center_x: 0
+      center_y: 0
+      radius: 5
+    '''
+    result = client.add_sketch_circle(document_name, sketch_name, center_x, center_y, radius)
+    return json.dumps(result)
+
+@mcp.tool()
+def add_sketch_rectangle(document_name: str, sketch_name: str, x1: float, y1: float, x2: float, y2: float) -> str:
+    '''
+    Add a rectangle to a sketch (defined by two opposite corners)
+    
+    Example:
+      document_name: 'MyDocument'
+      sketch_name: 'Sketch'
+      x1: 0
+      y1: 0
+      x2: 10
+      y2: 5
+    '''
+    result = client.add_sketch_rectangle(document_name, sketch_name, x1, y1, x2, y2)
+    return json.dumps(result)
+
+@mcp.tool()
+def extrude(document_name: str, pad_name: str, sketch_name: str, length: float, symmetric: bool = False) -> str:
+    '''Extrude (Pad) a sketch into a 3D solid'''
+    result = client.extrude(document_name, pad_name, sketch_name, length, symmetric)
     return json.dumps(result)
 
 @mcp.tool()
