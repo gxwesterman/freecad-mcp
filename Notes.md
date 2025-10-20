@@ -9,12 +9,13 @@
 
 ## WHAT I WOULD DO WITH MORE TIME
 - The most obvious answer is implement more features. I implemented a small subset of the total capabilities of FreeCAD. I would probably keep with my more granular tool-to-feature approach and just go through the features of FreeCAD and make tools as I learn.
-- As a prerequisite to implementing more features, I would like to actually know how to use FreeCAD more. Perhaps the most significant blocker throughout the development process was my lack of knowledge of FreeCAD. I had to learn the object definitions, how to run Python commands on the CLI to get shape definitions, how to even do stuff like extrude and fillet. Turns out CAD software is not something you can easily learn in the span of a few hours.
+- As a prerequisite to implementing more features, I would like to actually know how to use FreeCAD more. Perhaps the most significant blocker throughout the development process was my lack of knowledge of FreeCAD. I had to learn the object definitions, how to run Python commands on the CLI to get shape definitions, how to even do stuff like extrude and fillet. Turns out CAD software is not something you can easily learn in the span of a few hours. On top of that, the FreeCAD documentation is so lacking that the best way to figure out the parameters of various objects was to first figure out how to create it manually then print the attribute out on the Python CLI. For instance, the only way I was able to find out that fillets require an "Edges" attribute that consists of an array of triplets (which JSON-RPC DOES NOT LIKE by the way) was to manually create a fillet in the GUI and then print out the object on the command line.
 - Flesh out the existing tools. The new_object and update_object tools in particular are certainly missing some edge cases.
 - The two biggest gaps in the functionality independent of FreeCAD are:
     1. No response from the RPC functions back to the tools. Could make a response thread or something and then display progress back to the Claude client and the user.
     2. No means of getting an internal representation of the FreeCAD document. Simple get_object and get_objects tools would be extremely helpful for the LLM to understand instructions such as "Put a cylinder to the left of the cube" and to check if intended changes were actually applied.
 - I think the two features above would probably be the first things to add.
+- Probably switch the MCP server to TypeScript. I'm much more comfortable with it and I like types.
  
 ## KNOWN LIMITATIONS \ ISSUES
 - This is basically answered by the section prior.
